@@ -285,8 +285,8 @@ RealDevice::RealDevice(int x, int y,int NumCellperSynapse) {
 	writePulseWidthLTP = 300e-6;	// Write pulse width (s) for LTP or weight increase
 	writePulseWidthLTD = 300e-6;	// Write pulse width (s) for LTD or weight decrease
 	writeEnergy = 0;	// Dynamic variable for calculation of write energy (J)
-	maxNumLevelLTP =128;	// Maximum number of conductance states during LTP or weight increase
-	maxNumLevelLTD =128; // Maximum number of conductance states during LTD or weight decrease
+	maxNumLevelLTP =64;	// Maximum number of conductance states during LTP or weight increase
+	maxNumLevelLTD =64; // Maximum number of conductance states during LTD or weight decrease
 	numPulse = 0;	// Number of write pulses used in the most recent write operation (dynamic variable)
 	cmosAccess = true;	// True: Pseudo-crossbar (1T1R), false: cross-point
     FeFET = false;		// True: FeFET structure (Pseudo-crossbar only, should be cmosAccess=1)
@@ -322,16 +322,16 @@ RealDevice::RealDevice(int x, int y,int NumCellperSynapse) {
 	localGen.seed(std::time(0));
 	
 	/* Device-to-device weight update variation */
-	NL_LTP=0.04;	// LTP nonlinearity
-	NL_LTD=-0.63;	// LTD nonlinearity
+	NL_LTP=5.0;	// LTP nonlinearity
+	NL_LTD=-5.0;	// LTD nonlinearity
 	sigmaDtoD = 0;	// Sigma of device-to-device weight update vairation in gaussian distribution
 	gaussian_dist2 = new std::normal_distribution<double>(0, sigmaDtoD);	// Set up mean and stddev for device-to-device weight update vairation
 	paramALTP = getParamA(NL_LTP + (*gaussian_dist2)(localGen)) * maxNumLevelLTP;	// Parameter A for LTP nonlinearity
 	paramALTD = getParamA(NL_LTD + (*gaussian_dist2)(localGen)) * maxNumLevelLTD;	// Parameter A for LTD nonlinearity
 
 	/* Cycle-to-cycle weight update variation */
-	sigmaCtoC = 0.037*(maxConductance - minConductance);	// Sigma of cycle-to-cycle weight update vairation: defined as the percentage of conductance range
-	//sigmaCtoC = 0;
+	//sigmaCtoC = 0.037*(maxConductance - minConductance);	// Sigma of cycle-to-cycle weight update vairation: defined as the percentage of conductance range
+	sigmaCtoC = 0;
 	gaussian_dist3 = new std::normal_distribution<double>(0, sigmaCtoC);    // Set up mean and stddev for cycle-to-cycle weight update vairation
 
 	/* Conductance range variation */
@@ -379,15 +379,15 @@ double RealDevice::Read(double voltage) {	// Return read current (A)
 void RealDevice::Write(double deltaWeightNormalized, double weight, double minWeight, double maxWeight,int NumCell) {
 	double conductanceNew = 0;	// =conductance if no update
 	double conductanceNewN= conductanceN[NumCell];
-	int N1 = (NumCell-1)%NumCell;
-	int N2 = (NumCell+1)%NumCell;
-	double conductanceNewN1= conductance[N1];
-	double conductanceNewN2=conductance[N2];
+	int N1 = (NumCell-1)%4;
+	int N2 = (NumCell+1)%4;
+	double conductanceNewN1= conductanceN[N1];
+	double conductanceNewN2=conductanceN[N2];
 	deltaWeightNormalized = deltaWeightNormalized / (maxWeight - minWeight);
 	deltaWeightNormalized = NumCellperSynapse * deltaWeightNormalized;
 
 	if(weightchange>0){ // wegiht change -> linked modev
-	deltaWeightNormalized = deltaWeightNormalized/NumLinkedCell;
+	deltaWeightNormalized = deltaWeightNormalized/4.0;
 	if (deltaWeightNormalized > 0) {	// LTP
 		deltaWeightNormalized = truncate(deltaWeightNormalized, maxNumLevelLTP);
 		numPulse = deltaWeightNormalized * maxNumLevelLTP;

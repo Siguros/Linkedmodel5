@@ -925,13 +925,14 @@ double s2[param->nOutput];  // Output delta from hidden layer to the output laye
 												else if(static_cast<AnalogNVM*>(arrayHO->cell[jj][k])->weightprev<0 && deltaWeight2[jj][k]>0)
 												{
 													static_cast<AnalogNVM*>(arrayHO->cell[jj][k])->weightchange = 1;
+												//	std::cout<<static_cast<AnalogNVM*>(arrayHO->cell[jj][k])->weightchange<<std::endl;
 												}
 												else{
 													static_cast<AnalogNVM*>(arrayHO->cell[jj][k])->weightchange = 0;
 												}
 
 											arrayHO->WriteCell(jj, k, deltaWeight2[jj][k], weight2[jj][k], param->maxWeight, param->minWeight, true, i);
-											static_cast<AnalogNVM*>(arrayHO->cell[jj][k])->weightprev = deltaWegiht2[jj][k];
+											static_cast<AnalogNVM*>(arrayHO->cell[jj][k])->weightprev = deltaWeight2[jj][k];
 													
 										}
 									}
@@ -1136,10 +1137,10 @@ double s2[param->nOutput];  // Output delta from hidden layer to the output laye
 					totalAvgDepIH = (double)countDepIH/counttotalDepIH;
 					totalAvgPotenHO = (double)countPotenHO/counttotalPotenHO;
 					totalAvgDepHO =(double)countDepHO/counttotalDepHO;
-											std::cout<< "countPotenIH: "<< countPotenIH<< "ProbabilityIH:"<< (double)countPotenIH/counttotalPotenIH<<std::endl;
-											std::cout<< "countDepIH: "<<countDepIH<<"ProbabilityIH:"<< (double)countDepIH/counttotalDepIH<<std::endl;
-											std::cout<< "countPotenHO: "<< countPotenHO<<"ProbabilityHO:"<< (double)countPotenHO/counttotalPotenHO<<std::endl;
-											std::cout<< "countDepHO: "<<countDepHO<<"ProbabilityHO:"<< (double)countDepHO/counttotalDepHO<<std::endl;
+			//								std::cout<< "countPotenIH: "<< countPotenIH<< "ProbabilityIH:"<< (double)countPotenIH/counttotalPotenIH<<std::endl;
+			//								std::cout<< "countDepIH: "<<countDepIH<<"ProbabilityIH:"<< (double)countDepIH/counttotalDepIH<<std::endl;
+			//								std::cout<< "countPotenHO: "<< countPotenHO<<"ProbabilityHO:"<< (double)countPotenHO/counttotalPotenHO<<std::endl;
+				//							std::cout<< "countDepHO: "<<countDepHO<<"ProbabilityHO:"<< (double)countDepHO/counttotalDepHO<<std::endl;
 												}	
 		}
     }
