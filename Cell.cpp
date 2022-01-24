@@ -273,6 +273,7 @@ RealDevice::RealDevice(int x, int y,int NumCellperSynapse) {
 	weightchange = 0;
 	weightprev = 0;
 	NumLinkedCell = 3;
+	Linkedmode = false;
 	avgMaxConductance = (NumCellperSynapse)*maxConductance; // Average maximum cell conductance (S)
 	avgMinConductance = (NumCellperSynapse)*minConductance; // Average minimum cell conductance (S)
 	conductance = minConductance;	// Current conductance (S) (dynamic variable)
@@ -385,192 +386,306 @@ void RealDevice::Write(double deltaWeightNormalized, double weight, double minWe
 	double conductanceNewN2=conductanceN[N2];
 	deltaWeightNormalized = deltaWeightNormalized / (maxWeight - minWeight);
 	deltaWeightNormalized = NumCellperSynapse * deltaWeightNormalized;
-
-	if(weightchange>0){ // wegiht change -> linked modev
-	deltaWeightNormalized = deltaWeightNormalized/4.0;
-	if (deltaWeightNormalized > 0) {	// LTP
-		deltaWeightNormalized = truncate(deltaWeightNormalized, maxNumLevelLTP);
-		numPulse = deltaWeightNormalized * maxNumLevelLTP;
-		if (numPulse > maxNumLevelLTP) {
-			numPulse = maxNumLevelLTP;
-		}
-		if (nonlinearWrite) {
-			paramBLTP = (maxConductance - minConductance) / (1 - exp(-maxNumLevelLTP/paramALTP));
-			xPulse = InvNonlinearWeight(conductanceN[NumCell], maxNumLevelLTP, paramALTP, paramBLTP, minConductance);
-			conductanceNewN = NonlinearWeight(xPulse+numPulse, maxNumLevelLTP, paramALTP, paramBLTP, minConductance);
-			xPulse = InvNonlinearWeight(conductanceN[N1], maxNumLevelLTP, paramALTP, paramBLTP, minConductance);
-			conductanceNewN1 = NonlinearWeight(xPulse+numPulse, maxNumLevelLTP, paramALTP, paramBLTP, minConductance);
-			xPulse = InvNonlinearWeight(conductanceN[N2], maxNumLevelLTP, paramALTP, paramBLTP, minConductance);
-			conductanceNewN2 = NonlinearWeight(xPulse+numPulse, maxNumLevelLTP, paramALTP, paramBLTP, minConductance);
-		} else {
-			xPulse = (conductanceN[NumCell]- minConductance) / (maxConductance - minConductance) * maxNumLevelLTP;
-			conductanceNewN = (xPulse+numPulse) / maxNumLevelLTP * (maxConductance - minConductance) + minConductance;
-		}
-	} else {	// LTD
-		deltaWeightNormalized = truncate(deltaWeightNormalized, maxNumLevelLTD);
-		numPulse = deltaWeightNormalized * maxNumLevelLTD;
-		if (numPulse > maxNumLevelLTD) {
-			numPulse = maxNumLevelLTD;
-		}
-		if (nonlinearWrite) {
-			paramBLTD = (maxConductance - minConductance) / (1 - exp(-maxNumLevelLTD/paramALTD));
-			xPulse = InvNonlinearWeight(conductanceN[NumCell], maxNumLevelLTD, paramALTD, paramBLTD, minConductance);
-			conductanceNewN= NonlinearWeight(xPulse+numPulse, maxNumLevelLTD, paramALTD, paramBLTD, minConductance);
-			xPulse = InvNonlinearWeight(conductanceN[N1], maxNumLevelLTD, paramALTD, paramBLTD, minConductance);
-			conductanceNewN1= NonlinearWeight(xPulse+numPulse, maxNumLevelLTD, paramALTD, paramBLTD, minConductance);
-			xPulse = InvNonlinearWeight(conductanceN[N2], maxNumLevelLTD, paramALTD, paramBLTD, minConductance);
-			conductanceNewN2= NonlinearWeight(xPulse+numPulse, maxNumLevelLTD, paramALTD, paramBLTD, minConductance);
-		} else {
-			xPulse = (conductanceN[NumCell] - minConductance) / (maxConductance - minConductance) * maxNumLevelLTD;
-			conductanceNewN= (xPulse+numPulse) / maxNumLevelLTD * (maxConductance - minConductance) + minConductance;
-		}
-	}
-
-	/* Cycle-to-cycle variation */
-	extern std::mt19937 gen;
-    if (sigmaCtoC && numPulse != 0) {
-		conductanceNewN += (*gaussian_dist3)(gen) * sqrt(abs(numPulse));	// Absolute variation
-	}
-	
-	if (conductanceNewN > maxConductance) {
-		conductanceNewN = maxConductance;
-	} else if (conductanceNewN < minConductance) {
-		conductanceNewN = minConductance;
-	}
-
-	/* Write latency calculation */
-	if (!nonIdenticalPulse) {	// Identical write pulse scheme
-		if (numPulse > 0) { // LTP
-			writeLatencyLTP = numPulse * writePulseWidthLTP;
-			writeLatencyLTD = 0;
-		} else {    // LTD
-			writeLatencyLTP = 0;
-			writeLatencyLTD = -numPulse * writePulseWidthLTD;
-		}
-	} else {	// Non-identical write pulse scheme
-		writeLatencyLTP = 0;
-		writeLatencyLTD = 0;
-		writeVoltageSquareSum = 0;
-		double V = 0;
-		double PW = 0;
-		if (numPulse > 0) { // LTP
-			for (int i=0; i<numPulse; i++) {
-				V = VinitLTP + (xPulse+i) * VstepLTP;
-				PW = PWinitLTP + (xPulse+i) * PWstepLTP;
-				writeLatencyLTP += PW;
-				writeVoltageSquareSum += V * V;
+	if (Linkedmode) {
+		if (weightchange > 0) { // wegiht change -> linked modev
+			deltaWeightNormalized = deltaWeightNormalized / 4.0;
+			if (deltaWeightNormalized > 0) {	// LTP
+				deltaWeightNormalized = truncate(deltaWeightNormalized, maxNumLevelLTP);
+				numPulse = deltaWeightNormalized * maxNumLevelLTP;
+				if (numPulse > maxNumLevelLTP) {
+					numPulse = maxNumLevelLTP;
+				}
+				if (nonlinearWrite) {
+					paramBLTP = (maxConductance - minConductance) / (1 - exp(-maxNumLevelLTP / paramALTP));
+					xPulse = InvNonlinearWeight(conductanceN[NumCell], maxNumLevelLTP, paramALTP, paramBLTP, minConductance);
+					conductanceNewN = NonlinearWeight(xPulse + numPulse, maxNumLevelLTP, paramALTP, paramBLTP, minConductance);
+					xPulse = InvNonlinearWeight(conductanceN[N1], maxNumLevelLTP, paramALTP, paramBLTP, minConductance);
+					conductanceNewN1 = NonlinearWeight(xPulse + numPulse, maxNumLevelLTP, paramALTP, paramBLTP, minConductance);
+					xPulse = InvNonlinearWeight(conductanceN[N2], maxNumLevelLTP, paramALTP, paramBLTP, minConductance);
+					conductanceNewN2 = NonlinearWeight(xPulse + numPulse, maxNumLevelLTP, paramALTP, paramBLTP, minConductance);
+				}
+				else {
+					xPulse = (conductanceN[NumCell] - minConductance) / (maxConductance - minConductance) * maxNumLevelLTP;
+					conductanceNewN = (xPulse + numPulse) / maxNumLevelLTP * (maxConductance - minConductance) + minConductance;
+				}
 			}
-			writePulseWidthLTP = writeLatencyLTP / numPulse;
-		} else {    // LTD
-			for (int i=0; i<(-numPulse); i++) {
-				V = VinitLTD + (maxNumLevelLTD-xPulse+i) * VstepLTD;
-				PW = PWinitLTD + (maxNumLevelLTD-xPulse+i) * PWstepLTD;
-				writeLatencyLTD += PW;
-				writeVoltageSquareSum += V * V;
+			else {	// LTD
+				deltaWeightNormalized = truncate(deltaWeightNormalized, maxNumLevelLTD);
+				numPulse = deltaWeightNormalized * maxNumLevelLTD;
+				if (numPulse > maxNumLevelLTD) {
+					numPulse = maxNumLevelLTD;
+				}
+				if (nonlinearWrite) {
+					paramBLTD = (maxConductance - minConductance) / (1 - exp(-maxNumLevelLTD / paramALTD));
+					xPulse = InvNonlinearWeight(conductanceN[NumCell], maxNumLevelLTD, paramALTD, paramBLTD, minConductance);
+					conductanceNewN = NonlinearWeight(xPulse + numPulse, maxNumLevelLTD, paramALTD, paramBLTD, minConductance);
+					xPulse = InvNonlinearWeight(conductanceN[N1], maxNumLevelLTD, paramALTD, paramBLTD, minConductance);
+					conductanceNewN1 = NonlinearWeight(xPulse + numPulse, maxNumLevelLTD, paramALTD, paramBLTD, minConductance);
+					xPulse = InvNonlinearWeight(conductanceN[N2], maxNumLevelLTD, paramALTD, paramBLTD, minConductance);
+					conductanceNewN2 = NonlinearWeight(xPulse + numPulse, maxNumLevelLTD, paramALTD, paramBLTD, minConductance);
+				}
+				else {
+					xPulse = (conductanceN[NumCell] - minConductance) / (maxConductance - minConductance) * maxNumLevelLTD;
+					conductanceNewN = (xPulse + numPulse) / maxNumLevelLTD * (maxConductance - minConductance) + minConductance;
+				}
 			}
-			writePulseWidthLTD = writeLatencyLTD / (-numPulse);
-		}
-	}
-	conductancePrev = conductance;
-	conductanceN[NumCell] = conductanceNewN;
-	conductanceN[N1] = conductanceNewN1;
-	conductanceN[N2] = conductanceNewN2;
-	for(int i=0; i<NumCellperSynapse;i++){
-		conductanceNew += conductanceN[i];
-	}
-	conductance = conductanceNew;
 
-	}
-	else{ //no wegiht change
-	if (deltaWeightNormalized > 0) {	// LTP
-		deltaWeightNormalized = truncate(deltaWeightNormalized, maxNumLevelLTP);
-		numPulse = deltaWeightNormalized * maxNumLevelLTP;
-		if (numPulse > maxNumLevelLTP) {
-			numPulse = maxNumLevelLTP;
-		}
-		if (nonlinearWrite) {
-			paramBLTP = (maxConductance - minConductance) / (1 - exp(-maxNumLevelLTP/paramALTP));
-			xPulse = InvNonlinearWeight(conductanceN[NumCell], maxNumLevelLTP, paramALTP, paramBLTP, minConductance);
-			conductanceNewN = NonlinearWeight(xPulse+numPulse, maxNumLevelLTP, paramALTP, paramBLTP, minConductance);
-		} else {
-			xPulse = (conductanceN[NumCell]- minConductance) / (maxConductance - minConductance) * maxNumLevelLTP;
-			conductanceNewN = (xPulse+numPulse) / maxNumLevelLTP * (maxConductance - minConductance) + minConductance;
-		}
-	} else {	// LTD
-		deltaWeightNormalized = truncate(deltaWeightNormalized, maxNumLevelLTD);
-		numPulse = deltaWeightNormalized * maxNumLevelLTD;
-		if (numPulse > maxNumLevelLTD) {
-			numPulse = maxNumLevelLTD;
-		}
-		if (nonlinearWrite) {
-			paramBLTD = (maxConductance - minConductance) / (1 - exp(-maxNumLevelLTD/paramALTD));
-			xPulse = InvNonlinearWeight(conductanceN[NumCell], maxNumLevelLTD, paramALTD, paramBLTD, minConductance);
-			conductanceNewN= NonlinearWeight(xPulse+numPulse, maxNumLevelLTD, paramALTD, paramBLTD, minConductance);
-		} else {
-			xPulse = (conductanceN[NumCell] - minConductance) / (maxConductance - minConductance) * maxNumLevelLTD;
-			conductanceNewN= (xPulse+numPulse) / maxNumLevelLTD * (maxConductance - minConductance) + minConductance;
-		}
-	}
-
-	/* Cycle-to-cycle variation */
-	extern std::mt19937 gen;
-    if (sigmaCtoC && numPulse != 0) {
-		conductanceNewN += (*gaussian_dist3)(gen) * sqrt(abs(numPulse));	// Absolute variation
-	}
-	
-	if (conductanceNewN > maxConductance) {
-		conductanceNewN = maxConductance;
-	} else if (conductanceNewN < minConductance) {
-		conductanceNewN = minConductance;
-	}
-
-	/* Write latency calculation */
-	if (!nonIdenticalPulse) {	// Identical write pulse scheme
-		if (numPulse > 0) { // LTP
-			writeLatencyLTP = numPulse * writePulseWidthLTP;
-			writeLatencyLTD = 0;
-		} else {    // LTD
-			writeLatencyLTP = 0;
-			writeLatencyLTD = -numPulse * writePulseWidthLTD;
-		}
-	} else {	// Non-identical write pulse scheme
-		writeLatencyLTP = 0;
-		writeLatencyLTD = 0;
-		writeVoltageSquareSum = 0;
-		double V = 0;
-		double PW = 0;
-		if (numPulse > 0) { // LTP
-			for (int i=0; i<numPulse; i++) {
-				V = VinitLTP + (xPulse+i) * VstepLTP;
-				PW = PWinitLTP + (xPulse+i) * PWstepLTP;
-				writeLatencyLTP += PW;
-				writeVoltageSquareSum += V * V;
+			/* Cycle-to-cycle variation */
+			extern std::mt19937 gen;
+			if (sigmaCtoC && numPulse != 0) {
+				conductanceNewN += (*gaussian_dist3)(gen) * sqrt(abs(numPulse));	// Absolute variation
 			}
-			writePulseWidthLTP = writeLatencyLTP / numPulse;
-		} else {    // LTD
-			for (int i=0; i<(-numPulse); i++) {
-				V = VinitLTD + (maxNumLevelLTD-xPulse+i) * VstepLTD;
-				PW = PWinitLTD + (maxNumLevelLTD-xPulse+i) * PWstepLTD;
-				writeLatencyLTD += PW;
-				writeVoltageSquareSum += V * V;
+
+			if (conductanceNewN > maxConductance) {
+				conductanceNewN = maxConductance;
 			}
-			writePulseWidthLTD = writeLatencyLTD / (-numPulse);
+			else if (conductanceNewN < minConductance) {
+				conductanceNewN = minConductance;
+			}
+
+			/* Write latency calculation */
+			if (!nonIdenticalPulse) {	// Identical write pulse scheme
+				if (numPulse > 0) { // LTP
+					writeLatencyLTP = numPulse * writePulseWidthLTP;
+					writeLatencyLTD = 0;
+				}
+				else {    // LTD
+					writeLatencyLTP = 0;
+					writeLatencyLTD = -numPulse * writePulseWidthLTD;
+				}
+			}
+			else {	// Non-identical write pulse scheme
+				writeLatencyLTP = 0;
+				writeLatencyLTD = 0;
+				writeVoltageSquareSum = 0;
+				double V = 0;
+				double PW = 0;
+				if (numPulse > 0) { // LTP
+					for (int i = 0; i < numPulse; i++) {
+						V = VinitLTP + (xPulse + i) * VstepLTP;
+						PW = PWinitLTP + (xPulse + i) * PWstepLTP;
+						writeLatencyLTP += PW;
+						writeVoltageSquareSum += V * V;
+					}
+					writePulseWidthLTP = writeLatencyLTP / numPulse;
+				}
+				else {    // LTD
+					for (int i = 0; i < (-numPulse); i++) {
+						V = VinitLTD + (maxNumLevelLTD - xPulse + i) * VstepLTD;
+						PW = PWinitLTD + (maxNumLevelLTD - xPulse + i) * PWstepLTD;
+						writeLatencyLTD += PW;
+						writeVoltageSquareSum += V * V;
+					}
+					writePulseWidthLTD = writeLatencyLTD / (-numPulse);
+				}
+			}
+			conductancePrev = conductance;
+			conductanceN[NumCell] = conductanceNewN;
+			conductanceN[N1] = conductanceNewN1;
+			conductanceN[N2] = conductanceNewN2;
+			for (int i = 0; i < NumCellperSynapse; i++) {
+				conductanceNew += conductanceN[i];
+			}
+			conductance = conductanceNew;
+
+		}
+		else { //no wegiht change
+			if (deltaWeightNormalized > 0) {	// LTP
+				deltaWeightNormalized = truncate(deltaWeightNormalized, maxNumLevelLTP);
+				numPulse = deltaWeightNormalized * maxNumLevelLTP;
+				if (numPulse > maxNumLevelLTP) {
+					numPulse = maxNumLevelLTP;
+				}
+				if (nonlinearWrite) {
+					paramBLTP = (maxConductance - minConductance) / (1 - exp(-maxNumLevelLTP / paramALTP));
+					xPulse = InvNonlinearWeight(conductanceN[NumCell], maxNumLevelLTP, paramALTP, paramBLTP, minConductance);
+					conductanceNewN = NonlinearWeight(xPulse + numPulse, maxNumLevelLTP, paramALTP, paramBLTP, minConductance);
+				}
+				else {
+					xPulse = (conductanceN[NumCell] - minConductance) / (maxConductance - minConductance) * maxNumLevelLTP;
+					conductanceNewN = (xPulse + numPulse) / maxNumLevelLTP * (maxConductance - minConductance) + minConductance;
+				}
+			}
+			else {	// LTD
+				deltaWeightNormalized = truncate(deltaWeightNormalized, maxNumLevelLTD);
+				numPulse = deltaWeightNormalized * maxNumLevelLTD;
+				if (numPulse > maxNumLevelLTD) {
+					numPulse = maxNumLevelLTD;
+				}
+				if (nonlinearWrite) {
+					paramBLTD = (maxConductance - minConductance) / (1 - exp(-maxNumLevelLTD / paramALTD));
+					xPulse = InvNonlinearWeight(conductanceN[NumCell], maxNumLevelLTD, paramALTD, paramBLTD, minConductance);
+					conductanceNewN = NonlinearWeight(xPulse + numPulse, maxNumLevelLTD, paramALTD, paramBLTD, minConductance);
+				}
+				else {
+					xPulse = (conductanceN[NumCell] - minConductance) / (maxConductance - minConductance) * maxNumLevelLTD;
+					conductanceNewN = (xPulse + numPulse) / maxNumLevelLTD * (maxConductance - minConductance) + minConductance;
+				}
+			}
+
+			/* Cycle-to-cycle variation */
+			extern std::mt19937 gen;
+			if (sigmaCtoC && numPulse != 0) {
+				conductanceNewN += (*gaussian_dist3)(gen) * sqrt(abs(numPulse));	// Absolute variation
+			}
+
+			if (conductanceNewN > maxConductance) {
+				conductanceNewN = maxConductance;
+			}
+			else if (conductanceNewN < minConductance) {
+				conductanceNewN = minConductance;
+			}
+
+			/* Write latency calculation */
+			if (!nonIdenticalPulse) {	// Identical write pulse scheme
+				if (numPulse > 0) { // LTP
+					writeLatencyLTP = numPulse * writePulseWidthLTP;
+					writeLatencyLTD = 0;
+				}
+				else {    // LTD
+					writeLatencyLTP = 0;
+					writeLatencyLTD = -numPulse * writePulseWidthLTD;
+				}
+			}
+			else {	// Non-identical write pulse scheme
+				writeLatencyLTP = 0;
+				writeLatencyLTD = 0;
+				writeVoltageSquareSum = 0;
+				double V = 0;
+				double PW = 0;
+				if (numPulse > 0) { // LTP
+					for (int i = 0; i < numPulse; i++) {
+						V = VinitLTP + (xPulse + i) * VstepLTP;
+						PW = PWinitLTP + (xPulse + i) * PWstepLTP;
+						writeLatencyLTP += PW;
+						writeVoltageSquareSum += V * V;
+					}
+					writePulseWidthLTP = writeLatencyLTP / numPulse;
+				}
+				else {    // LTD
+					for (int i = 0; i < (-numPulse); i++) {
+						V = VinitLTD + (maxNumLevelLTD - xPulse + i) * VstepLTD;
+						PW = PWinitLTD + (maxNumLevelLTD - xPulse + i) * PWstepLTD;
+						writeLatencyLTD += PW;
+						writeVoltageSquareSum += V * V;
+					}
+					writePulseWidthLTD = writeLatencyLTD / (-numPulse);
+				}
+			}
+			conductancePrev = conductance;
+			conductanceN[NumCell] = conductanceNewN;
+			for (int i = 0; i < NumCellperSynapse; i++) {
+				conductanceNew += conductanceN[i];
+			}
+			conductance = conductanceNew;
+			// conductancePrev = conductance;
+			// conductanceNew = conductanceNew - conductanceN[NumCell] + conductanceNewN;
+			// conductanceN[NumCell] = conductanceNewN;
+			// conductance = conductanceNew;
+
+
+
 		}
 	}
-	conductancePrev = conductance;
-	conductanceN[NumCell] = conductanceNewN;
-	for(int i=0; i<NumCellperSynapse;i++){
-		conductanceNew += conductanceN[i];
+	else {
+		 //no wegiht change
+			if (deltaWeightNormalized > 0) {	// LTP
+				deltaWeightNormalized = truncate(deltaWeightNormalized, maxNumLevelLTP);
+				numPulse = deltaWeightNormalized * maxNumLevelLTP;
+				if (numPulse > maxNumLevelLTP) {
+					numPulse = maxNumLevelLTP;
+				}
+				if (nonlinearWrite) {
+					paramBLTP = (maxConductance - minConductance) / (1 - exp(-maxNumLevelLTP / paramALTP));
+					xPulse = InvNonlinearWeight(conductanceN[NumCell], maxNumLevelLTP, paramALTP, paramBLTP, minConductance);
+					conductanceNewN = NonlinearWeight(xPulse + numPulse, maxNumLevelLTP, paramALTP, paramBLTP, minConductance);
+				}
+				else {
+					xPulse = (conductanceN[NumCell] - minConductance) / (maxConductance - minConductance) * maxNumLevelLTP;
+					conductanceNewN = (xPulse + numPulse) / maxNumLevelLTP * (maxConductance - minConductance) + minConductance;
+				}
+			}
+			else {	// LTD
+				deltaWeightNormalized = truncate(deltaWeightNormalized, maxNumLevelLTD);
+				numPulse = deltaWeightNormalized * maxNumLevelLTD;
+				if (numPulse > maxNumLevelLTD) {
+					numPulse = maxNumLevelLTD;
+				}
+				if (nonlinearWrite) {
+					paramBLTD = (maxConductance - minConductance) / (1 - exp(-maxNumLevelLTD / paramALTD));
+					xPulse = InvNonlinearWeight(conductanceN[NumCell], maxNumLevelLTD, paramALTD, paramBLTD, minConductance);
+					conductanceNewN = NonlinearWeight(xPulse + numPulse, maxNumLevelLTD, paramALTD, paramBLTD, minConductance);
+				}
+				else {
+					xPulse = (conductanceN[NumCell] - minConductance) / (maxConductance - minConductance) * maxNumLevelLTD;
+					conductanceNewN = (xPulse + numPulse) / maxNumLevelLTD * (maxConductance - minConductance) + minConductance;
+				}
+			}
+
+			/* Cycle-to-cycle variation */
+			extern std::mt19937 gen;
+			if (sigmaCtoC && numPulse != 0) {
+				conductanceNewN += (*gaussian_dist3)(gen) * sqrt(abs(numPulse));	// Absolute variation
+			}
+
+			if (conductanceNewN > maxConductance) {
+				conductanceNewN = maxConductance;
+			}
+			else if (conductanceNewN < minConductance) {
+				conductanceNewN = minConductance;
+			}
+
+			/* Write latency calculation */
+			if (!nonIdenticalPulse) {	// Identical write pulse scheme
+				if (numPulse > 0) { // LTP
+					writeLatencyLTP = numPulse * writePulseWidthLTP;
+					writeLatencyLTD = 0;
+				}
+				else {    // LTD
+					writeLatencyLTP = 0;
+					writeLatencyLTD = -numPulse * writePulseWidthLTD;
+				}
+			}
+			else {	// Non-identical write pulse scheme
+				writeLatencyLTP = 0;
+				writeLatencyLTD = 0;
+				writeVoltageSquareSum = 0;
+				double V = 0;
+				double PW = 0;
+				if (numPulse > 0) { // LTP
+					for (int i = 0; i < numPulse; i++) {
+						V = VinitLTP + (xPulse + i) * VstepLTP;
+						PW = PWinitLTP + (xPulse + i) * PWstepLTP;
+						writeLatencyLTP += PW;
+						writeVoltageSquareSum += V * V;
+					}
+					writePulseWidthLTP = writeLatencyLTP / numPulse;
+				}
+				else {    // LTD
+					for (int i = 0; i < (-numPulse); i++) {
+						V = VinitLTD + (maxNumLevelLTD - xPulse + i) * VstepLTD;
+						PW = PWinitLTD + (maxNumLevelLTD - xPulse + i) * PWstepLTD;
+						writeLatencyLTD += PW;
+						writeVoltageSquareSum += V * V;
+					}
+					writePulseWidthLTD = writeLatencyLTD / (-numPulse);
+				}
+			}
+			conductancePrev = conductance;
+			conductanceN[NumCell] = conductanceNewN;
+			for (int i = 0; i < NumCellperSynapse; i++) {
+				conductanceNew += conductanceN[i];
+			}
+			conductance = conductanceNew;
+			// conductancePrev = conductance;
+			// conductanceNew = conductanceNew - conductanceN[NumCell] + conductanceNewN;
+			// conductanceN[NumCell] = conductanceNewN;
+			// conductance = conductanceNew;
+
+
+
+		
 	}
-	conductance = conductanceNew;	
-	// conductancePrev = conductance;
-	// conductanceNew = conductanceNew - conductanceN[NumCell] + conductanceNewN;
-	// conductanceN[NumCell] = conductanceNewN;
-	// conductance = conductanceNew;
-
-
-
-}
 }
 
 /* Measured device */
