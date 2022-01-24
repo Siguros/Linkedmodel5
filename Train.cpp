@@ -605,7 +605,7 @@ double s2[param->nOutput];  // Output delta from hidden layer to the output laye
 													static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->weightchange = 0;
 												}
 												if(param->DeltaWeightDist){
-													double weightprev1=arrayIH->ConductanceToWeight(jj, k, param->maxWeight, param->minWeight);
+													weightprev1=arrayIH->ConductanceToWeight(jj, k, param->maxWeight, param->minWeight);
 												}
 												
 												arrayIH->WriteCell(jj, k, deltaWeight1[jj][k], weight1[jj][k], param->maxWeight, param->minWeight, true, i);
