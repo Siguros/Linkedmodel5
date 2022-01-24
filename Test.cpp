@@ -140,19 +140,7 @@ void Validate() {
 							IsumMax += arrayIH->GetMaxCellReadCurrent(j,k);
 							IsumMin += arrayIH->GetMinCellReadCurrent(j,k);
 
-							for (int kl = 0; kl < 20; kl++) {
-								double kj = (kl - 10) / 10;
-								if (weight1[j][k] > kj && weight1[j][k] < kj + 0.1) {
-									weightTestDist[kl] += 1;
-								}
-								else if (weight1[j][k] == -1) {
-									weightTestDist[0] += 1;
-								}
-								else if (weight1[j][k] == 1) {
-									weightTestDist[20] += 1;
 
-								}
-							}
 							
 						}
 						sumArrayReadEnergyIH += Isum * readVoltageIH * readPulseWidthIH;
@@ -399,12 +387,7 @@ void Validate() {
 		if (testOutput[i][countNum] == 1) {
 			correct++;
 		}
-		double test1;
-		for (int kl = 0; kl < 20; kl++) {
-			std::cout << weightTestDist[kl] << std::endl;
-			test1 += weightTestDist[kl]
-		}
-		std::cout << test1 << std::endl;
+
 	}
 	if (!param->useHardwareInTraining) {    // Calculate the classification latency and energy only for offline classification
 		arrayIH->readEnergy += sumArrayReadEnergyIH;
@@ -413,6 +396,32 @@ void Validate() {
 		subArrayHO->readDynamicEnergy += sumNeuroSimReadEnergyHO;
 		subArrayIH->readLatency += sumReadLatencyIH;
 		subArrayHO->readLatency += sumReadLatencyHO;
+	}
+	if (param->WeightTestDist) {
+		for (int j = 0; j < param->nHide; j++) {
+			for (int k = 0; k < param->nInput; k++) {
+				for (int kl = 0; kl < 20; kl++) {
+					double kj = (kl - 10) / 10;
+					if (weight1[j][k] > kj && weight1[j][k] < kj + 0.1) {
+						weightTestDist[kl] += 1;
+					}
+					else if (weight1[j][k] == -1) {
+						weightTestDist[0] += 1;
+					}
+					else if (weight1[j][k] == 1) {
+						weightTestDist[20] += 1;
+
+					}
+				}
+			}
+		}
+
+		double test1;
+		for (int kl = 0; kl < 20; kl++) {
+			std::cout << weightTestDist[kl] << std::endl;
+			test1 += weightTestDist[kl]
+		}
+		std::cout << test1 << std::endl;
 	}
 }
 
