@@ -401,7 +401,7 @@ void Validate() {
 		for (int j = 0; j < param->nHide; j++) {
 			for (int k = 0; k < param->nInput; k++) {
 				for (int kl = 0; kl < 20; kl++) {
-					double kj = (kl - 10) / 10;
+					double kj = (double)(kl - 10) / 10;
 					if (weight1[j][k] > kj && weight1[j][k] < kj + 0.1) {
 						weightTestDist[kl] += 1;
 					}
@@ -409,7 +409,7 @@ void Validate() {
 						weightTestDist[0] += 1;
 					}
 					else if (weight1[j][k] == 1) {
-						weightTestDist[20] += 1;
+						weightTestDist[19] += 1;
 
 					}
 				}
@@ -417,11 +417,12 @@ void Validate() {
 		}
 
 		double test1;
-		for (int kl = 0; kl < 20; kl++) {
-			std::cout << weightTestDist[kl] << std::endl;
-			test1 += weightTestDist[kl]
+		for (int ki = 0; ki < 20; ki++) {
+			std::cout << weightTestDist[ki] << std::endl;
+			test1 += weightTestDist[ki];
 		}
 		std::cout << test1 << std::endl;
+		std::fill(weightTestDist.begin(), weightTestDist.end(), 0);
 	}
 }
 
