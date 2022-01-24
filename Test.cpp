@@ -405,9 +405,11 @@ void Validate() {
 					if ((weight1[j][k] > kj || weight1[j][k]==kj) && weight1[j][k] < kj + 0.1) {
 						weightTestDist[kl] += 1;
 					}
-					else if (weight1[j][k] == 1) {
+					if(kl==19){
+					if (weight1[j][k] == 1) {
 						weightTestDist[19] += 1;
 
+					}
 					}
 				}
 			}
