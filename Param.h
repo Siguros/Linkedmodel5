@@ -89,6 +89,7 @@ public:
 	bool PulseOperate; // modifing # of pulses / 1 cell
 	int PulseNum;
 	bool WeightTestDist;
+	bool SignTestDist;
 	
 };
 
