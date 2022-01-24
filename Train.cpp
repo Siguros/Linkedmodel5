@@ -127,7 +127,7 @@ double s2[param->nOutput];  // Output delta from hidden layer to the output laye
 		int countSignPPHO= 0;
 		int countSignDPHO= 0;
 		int countSignPDHO= 0;
-		int countSignDDHO= 0
+		int countSignDDHO= 0;
 		int countPotenIH = 0;
 		int countDepIH = 0;
 		int countPotenHO = 0;
