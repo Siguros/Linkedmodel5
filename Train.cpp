@@ -120,8 +120,14 @@ double s1[param->nHide];    // Output delta from input layer to the hidden layer
 double s2[param->nOutput];  // Output delta from hidden layer to the output layer [param->nOutput]
 
 	for (int t = 0; t < epochs; t++) {
-		int countSignIH= 0;
-		int countSignHO = 0;
+		int countSignPPIH= 0;
+		int countSignDPIH= 0;
+		int countSignPDIH= 0;
+		int countSignDDIH= 0;
+		int countSignPPHO= 0;
+		int countSignDPHO= 0;
+		int countSignPDHO= 0;
+		int countSignDDHO= 0
 		int countPotenIH = 0;
 		int countDepIH = 0;
 		int countPotenHO = 0;
@@ -572,14 +578,20 @@ double s2[param->nOutput];  // Output delta from hidden layer to the output laye
 												if(static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->weightprev>0 && deltaWeight1[jj][k]<0)
 												{
 													static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->weightchange = 1;
-													countSignIH += 1;
+													countSignPDIH += 1;
 												}
 												else if(static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->weightprev<0 && deltaWeight1[jj][k]>0)
 												{
 													static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->weightchange = 1;
-													countSignIH += 1;
+													countSignDPIH += 1;
 												}
 												else{
+													if(static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->weightprev<0 && deltaWeight1[jj][k]<0){
+													countSignDDIH += 1;
+													}
+													else if(static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->weightprev>0 && deltaWeight1[jj][k]>0){
+													countSignPPIH += 1;
+													}
 													static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->weightchange = 0;
 												}
 												arrayIH->WriteCell(jj, k, deltaWeight1[jj][k], weight1[jj][k], param->maxWeight, param->minWeight, true, i);
@@ -925,15 +937,21 @@ double s2[param->nOutput];  // Output delta from hidden layer to the output laye
 											if(static_cast<AnalogNVM*>(arrayHO->cell[jj][k])->weightprev>0 && deltaWeight2[jj][k]<0)
 												{
 													static_cast<AnalogNVM*>(arrayHO->cell[jj][k])->weightchange = 1;
-													countSignHO +=1;
+													countSignPDHO +=1;
 												}
 												else if(static_cast<AnalogNVM*>(arrayHO->cell[jj][k])->weightprev<0 && deltaWeight2[jj][k]>0)
 												{
 													static_cast<AnalogNVM*>(arrayHO->cell[jj][k])->weightchange = 1;
-													countSignHO +=1;
+													countSignDPHO +=1;
 												//	std::cout<<static_cast<AnalogNVM*>(arrayHO->cell[jj][k])->weightchange<<std::endl;
 												}
 												else{
+													if(static_cast<AnalogNVM*>(arrayHO->cell[jj][k])->weightprev<0 && deltaWeight2[jj][k]<0){
+													countSignDDHO +=1;
+													}
+													else if(static_cast<AnalogNVM*>(arrayHO->cell[jj][k])->weightprev>0 && deltaWeight2[jj][k]>0){
+													countSignPPHO +=1;
+													}
 													static_cast<AnalogNVM*>(arrayHO->cell[jj][k])->weightchange = 0;
 												}
 
@@ -1140,8 +1158,14 @@ double s2[param->nOutput];  // Output delta from hidden layer to the output laye
 			}
 				if(batchSize == (numTrain-1)){
 					if(param->SignTestDist){
-					std::cout<<countSignIH<<std::endl;
-					std::cout<<countSignHO<<std::endl;
+					std::cout<<countSignPPIH<<std::endl;
+					std::cout<<countSignPDIH<<std::endl;
+					std::cout<<countSignDPIH<<std::endl;
+					std::cout<<countSignDDIH<<std::endl;
+					std::cout<<countSignPPHO<<std::endl;
+					std::cout<<countSignPDHO<<std::endl;
+					std::cout<<countSignDPHO<<std::endl;
+					std::cout<<countSignDDHO<<std::endl;
 					}
 					//totalAvgPotenIH = (double)countPotenIH/counttotalPotenIH;
 					//totalAvgDepIH = (double)countDepIH/counttotalDepIH;
