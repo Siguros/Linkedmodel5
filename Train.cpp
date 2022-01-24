@@ -53,7 +53,7 @@ extern std::vector< std::vector<double> > Input;
 extern std::vector< std::vector<int> > dInput;
 extern std::vector< std::vector<double> > Output;
 
-extern std: :vector< std::vector<double> > weight1;
+extern std::vector< std::vector<double> > weight1;
 extern std::vector< std::vector<double> > weight2;
 extern std::vector< std::vector<double> > deltaWeight1;
 extern std::vector< std::vector<double> > deltaWeight2;
