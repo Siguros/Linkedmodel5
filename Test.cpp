@@ -402,10 +402,10 @@ void Validate() {
 			for (int k = 0; k < param->nInput; k++) {
 				for (int kl = 0; kl < 20; kl++) {
 					double kj = (double)(kl - 10) / 10;
-					if (weight1[j][k] >= kj && weight1[j][k] < kj + 0.1) {
+					if ((weight1[j][k] > kj || weight1[j][k]==kj) && weight1[j][k] < kj + 0.1) {
 						weightTestDist[kl] += 1;
 					}
-					else if (weight1[j][k] = 1) {
+					else if (weight1[j][k] == 1) {
 						weightTestDist[19] += 1;
 
 					}
