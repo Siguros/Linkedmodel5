@@ -53,7 +53,7 @@ extern std::vector< std::vector<double> > Input;
 extern std::vector< std::vector<int> > dInput;
 extern std::vector< std::vector<double> > Output;
 
-extern std::vector< std::vector<double> > weight1;
+extern std: :vector< std::vector<double> > weight1;
 extern std::vector< std::vector<double> > weight2;
 extern std::vector< std::vector<double> > deltaWeight1;
 extern std::vector< std::vector<double> > deltaWeight2;
@@ -120,6 +120,16 @@ double s1[param->nHide];    // Output delta from input layer to the hidden layer
 double s2[param->nOutput];  // Output delta from hidden layer to the output layer [param->nOutput]
 
 	for (int t = 0; t < epochs; t++) {
+		double weightprev1=0;
+		double weightprev2=0;
+		std::vector<double> deltaweightDistIHPD(20);
+		std::vector<double> deltaweightDistIHDP(20);
+		std::vector<double> deltaweightDistHOPD(20);
+		std::vector<double> deltaweightDistHODP(20);
+		std::vector<double> deltaweightCountIHPD(20);
+		std::vector<double> deltaweightCountIHDP(20);
+		std::vector<double> deltaweightCountHOPD(20);
+		std::vector<double> deltaweightCountHODP(20);
 		int countSignPPIH= 0;
 		int countSignDPIH= 0;
 		int countSignPDIH= 0;
@@ -594,7 +604,46 @@ double s2[param->nOutput];  // Output delta from hidden layer to the output laye
 													}
 													static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->weightchange = 0;
 												}
+												if(param->DeltaWeightDist){
+													double weightprev1=arrayIH->ConductanceToWeight(jj, k, param->maxWeight, param->minWeight);
+												}
+												
 												arrayIH->WriteCell(jj, k, deltaWeight1[jj][k], weight1[jj][k], param->maxWeight, param->minWeight, true, i);
+												//static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->weightprev = deltaWeight1[jj][k];
+												
+					if(param->DeltaWeightDist){
+					if(static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->weightprev<0 && deltaWeight1[jj][k]>0){//D->P
+					for (int kl = 0; kl < 20; kl++) {
+					double kj = (double)(kl - 10) / 10;
+					if ((weightprev1 > kj || weightprev1==kj) && weightprev1 < kj + 0.1) {
+					  deltaweightDistIHDP[kl]+= (arrayIH->ConductanceToWeight(jj, k, param->maxWeight, param->minWeight)-weightprev1)/deltaWeight1[jj][k];
+					  deltaweightCountIHDP[kl] += 1;
+					}
+					if(kl==19){
+					if (weightprev1 == 1) {
+						deltaweightDistIHDP[19] += (arrayIH->ConductanceToWeight(jj, k, param->maxWeight, param->minWeight)-weightprev1)/deltaWeight1[jj][k];
+						deltaweightCountIHDP[kl] += 1;
+					}
+					}
+				}
+					}
+					else if(static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->weightprev>0 && deltaWeight1[jj][k]<0){//P->D
+						for (int kl = 0; kl < 20; kl++) {
+					double kj = (double)(kl - 10) / 10;
+					if ((weightprev1 > kj || weightprev1==kj) && weightprev1 < kj + 0.1) {
+					  deltaweightDistIHPD[kl]+= (arrayIH->ConductanceToWeight(jj, k, param->maxWeight, param->minWeight)-weightprev1)/deltaWeight1[jj][k];
+					  deltaweightCountIHPD[kl] += 1;
+					}
+					if(kl==19){
+					if (weightprev1 == 1) {
+						deltaweightDistIHPD[19] += (arrayIH->ConductanceToWeight(jj, k, param->maxWeight, param->minWeight)-weightprev1)/deltaWeight1[jj][k];
+						deltaweightCountIHPD[kl] += 1;
+					}
+					}
+				}
+					}
+		
+												}
 												static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->weightprev = deltaWeight1[jj][k];
 												// count depression max to depression or potentiation max to potentiation
 												//std::cout << countt << std::endl;
@@ -606,6 +655,7 @@ double s2[param->nOutput];  // Output delta from hidden layer to the output laye
 								}
 								
 							    weight1[jj][k] = arrayIH->ConductanceToWeight(jj, k, param->maxWeight, param->minWeight); 
+							
                                 weightChangeBatch = weightChangeBatch || static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->numPulse;
                                 if(fabs(static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->numPulse) > maxPulseNum)
                                 {
@@ -954,8 +1004,45 @@ double s2[param->nOutput];  // Output delta from hidden layer to the output laye
 													}
 													static_cast<AnalogNVM*>(arrayHO->cell[jj][k])->weightchange = 0;
 												}
-
+											if(param->DeltaWeightDist){
+													weightprev2=arrayHO->ConductanceToWeight(jj, k, param->maxWeight, param->minWeight);
+												}
 											arrayHO->WriteCell(jj, k, deltaWeight2[jj][k], weight2[jj][k], param->maxWeight, param->minWeight, true, i);
+					if(param->DeltaWeightDist){
+					if(static_cast<AnalogNVM*>(arrayHO->cell[jj][k])->weightprev<0 && deltaWeight2[jj][k]>0){//D->P
+					for (int kl = 0; kl < 20; kl++) {
+					double kj = (double)(kl - 10) / 10;
+					if ((weightprev2 > kj || weightprev2==kj) && weightprev2 < kj + 0.1) {
+					  deltaweightDistHODP[kl]+= (arrayHO->ConductanceToWeight(jj, k, param->maxWeight, param->minWeight)-weightprev2)/deltaWeight2[jj][k];
+					  deltaweightCountHODP[kl] += 1;
+					}
+					if(kl==19){
+					if (weightprev2 == 1) {
+						deltaweightDistHODP[19] += (arrayHO->ConductanceToWeight(jj, k, param->maxWeight, param->minWeight)-weightprev2)/deltaWeight2[jj][k];
+						deltaweightCountHODP[kl] += 1;
+					}
+					}
+				}
+					}
+					else if(static_cast<AnalogNVM*>(arrayHO->cell[jj][k])->weightprev>0 && deltaWeight2[jj][k]<0){//P->D
+					for (int kl = 0; kl < 20; kl++) {
+					double kj = (double)(kl - 10) / 10;
+					if ((weightprev2 > kj || weightprev2==kj) && weightprev2 < kj + 0.1) {
+					  deltaweightDistHOPD[kl]+= (arrayHO->ConductanceToWeight(jj, k, param->maxWeight, param->minWeight)-weightprev2)/deltaWeight2[jj][k];
+					  deltaweightCountHOPD[kl] += 1;
+					}
+					if(kl==19){
+					if (weightprev2 == 1) {
+						deltaweightDistHOPD[19] += (arrayHO->ConductanceToWeight(jj, k, param->maxWeight, param->minWeight)-weightprev2)/deltaWeight2[jj][k];
+						deltaweightCountHOPD[kl] += 1;
+					}
+					}
+				}
+					}
+		
+												}
+											
+											
 											static_cast<AnalogNVM*>(arrayHO->cell[jj][k])->weightprev = deltaWeight2[jj][k];
 													
 										}
@@ -1166,6 +1253,18 @@ double s2[param->nOutput];  // Output delta from hidden layer to the output laye
 					std::cout<<countSignPDHO<<std::endl;
 					std::cout<<countSignDPHO<<std::endl;
 					std::cout<<countSignDDHO<<std::endl;
+					}
+					if(param->DeltaWeightDist){
+						for(int kl=0; kl<20; kl++){
+							std::cout<< deltaweightDistIHPD[kl]/deltaweightCountIHPD[kl]<<std::endl;
+							//std::cout<< deltaweightDistIHDP[kl]/deltaweightCountIHDP[kl]<<std::endl;
+
+						}
+								for(int kl=0; kl<20; kl++){
+							std::cout<< deltaweightDistIHDP[kl]/deltaweightCountIHDP[kl]<<std::endl;
+							//std::cout<< deltaweightDistIHDP[kl]/deltaweightCountIHDP[kl]<<std::endl;
+
+						}
 					}
 					//totalAvgPotenIH = (double)countPotenIH/counttotalPotenIH;
 					//totalAvgDepIH = (double)countDepIH/counttotalDepIH;

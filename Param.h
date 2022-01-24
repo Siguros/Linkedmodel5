@@ -90,6 +90,7 @@ public:
 	int PulseNum;
 	bool WeightTestDist;
 	bool SignTestDist;
+	bool DeltaWeightDist;
 	
 };
 
