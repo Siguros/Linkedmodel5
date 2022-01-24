@@ -120,6 +120,8 @@ double s1[param->nHide];    // Output delta from input layer to the hidden layer
 double s2[param->nOutput];  // Output delta from hidden layer to the output layer [param->nOutput]
 
 	for (int t = 0; t < epochs; t++) {
+		int countSignIH= 0;
+		int countSignHO = 0;
 		int countPotenIH = 0;
 		int countDepIH = 0;
 		int countPotenHO = 0;
@@ -570,10 +572,12 @@ double s2[param->nOutput];  // Output delta from hidden layer to the output laye
 												if(static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->weightprev>0 && deltaWeight1[jj][k]<0)
 												{
 													static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->weightchange = 1;
+													countSignIH += 1;
 												}
 												else if(static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->weightprev<0 && deltaWeight1[jj][k]>0)
 												{
 													static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->weightchange = 1;
+													countSignIH += 1;
 												}
 												else{
 													static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->weightchange = 0;
@@ -921,10 +925,12 @@ double s2[param->nOutput];  // Output delta from hidden layer to the output laye
 											if(static_cast<AnalogNVM*>(arrayHO->cell[jj][k])->weightprev>0 && deltaWeight2[jj][k]<0)
 												{
 													static_cast<AnalogNVM*>(arrayHO->cell[jj][k])->weightchange = 1;
+													countSignHO +=1;
 												}
 												else if(static_cast<AnalogNVM*>(arrayHO->cell[jj][k])->weightprev<0 && deltaWeight2[jj][k]>0)
 												{
 													static_cast<AnalogNVM*>(arrayHO->cell[jj][k])->weightchange = 1;
+													countSignHO +=1;
 												//	std::cout<<static_cast<AnalogNVM*>(arrayHO->cell[jj][k])->weightchange<<std::endl;
 												}
 												else{
