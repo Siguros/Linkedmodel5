@@ -135,6 +135,7 @@ public:
 	int weightchange;
 	double weightprev;
 	int NumLinkedCell;
+	bool Linkedmode;
 	virtual double Read(double voltage) = 0;
 	virtual void Write(double deltaWeightNormalized, double weight, double minWeight, double maxWeight,int NumCell) = 0;
 	double GetMaxReadCurrent(){
