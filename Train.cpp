@@ -1139,10 +1139,14 @@ double s2[param->nOutput];  // Output delta from hidden layer to the output laye
 				}
 			}
 				if(batchSize == (numTrain-1)){
-					totalAvgPotenIH = (double)countPotenIH/counttotalPotenIH;
-					totalAvgDepIH = (double)countDepIH/counttotalDepIH;
-					totalAvgPotenHO = (double)countPotenHO/counttotalPotenHO;
-					totalAvgDepHO =(double)countDepHO/counttotalDepHO;
+					if(param->SignTestDist){
+					std::cout<<countSignIH<<std::endl;
+					std::cout<<countSignHO<<std::endl;
+					}
+					//totalAvgPotenIH = (double)countPotenIH/counttotalPotenIH;
+					//totalAvgDepIH = (double)countDepIH/counttotalDepIH;
+					//totalAvgPotenHO = (double)countPotenHO/counttotalPotenHO;
+					//totalAvgDepHO =(double)countDepHO/counttotalDepHO;
 			//								std::cout<< "countPotenIH: "<< countPotenIH<< "ProbabilityIH:"<< (double)countPotenIH/counttotalPotenIH<<std::endl;
 			//								std::cout<< "countDepIH: "<<countDepIH<<"ProbabilityIH:"<< (double)countDepIH/counttotalDepIH<<std::endl;
 			//								std::cout<< "countPotenHO: "<< countPotenHO<<"ProbabilityHO:"<< (double)countPotenHO/counttotalPotenHO<<std::endl;
