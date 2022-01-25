@@ -604,43 +604,48 @@ double s2[param->nOutput];  // Output delta from hidden layer to the output laye
 													}
 													static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->weightchange = 0;
 												}
-												if(param->DeltaWeightDist){
-													weightprev1=arrayIH->ConductanceToWeight(jj, k, param->maxWeight, param->minWeight);
-												}
+												
+												double	weightprev1=arrayIH->ConductanceToWeight(jj, k, param->maxWeight, param->minWeight);
+												
 												
 												arrayIH->WriteCell(jj, k, deltaWeight1[jj][k], weight1[jj][k], param->maxWeight, param->minWeight, true, i);
 												//static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->weightprev = deltaWeight1[jj][k];
-												
+												double weightnew1 = arrayIH->ConductanceToWeight(jj, k, param->maxWeight, param->minWeight);
+											
 					if(param->DeltaWeightDist){
 					if(static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->weightprev<0 && deltaWeight1[jj][k]>0){//D->P
+					if(deltaWeight1[jj][k]>0.01){
 					for (int kl = 0; kl < 20; kl++) {
 					double kj = (double)(kl - 10) / 10;
 					if ((weightprev1 > kj || weightprev1==kj) && weightprev1 < kj + 0.1) {
-					  deltaweightDistIHDP[kl]+= (arrayIH->ConductanceToWeight(jj, k, param->maxWeight, param->minWeight)-weightprev1)/deltaWeight1[jj][k];
+					  deltaweightDistIHDP[kl]+= (weightnew1-weightprev1)/deltaWeight1[jj][k];
 					  deltaweightCountIHDP[kl] += 1;
 					}
 					if(kl==19){
 					if (weightprev1 == 1) {
-						deltaweightDistIHDP[19] += (arrayIH->ConductanceToWeight(jj, k, param->maxWeight, param->minWeight)-weightprev1)/deltaWeight1[jj][k];
+						deltaweightDistIHDP[19] += (weightnew1-weightprev1)/deltaWeight1[jj][k];
 						deltaweightCountIHDP[kl] += 1;
 					}
 					}
 				}
 					}
+					}
 					else if(static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->weightprev>0 && deltaWeight1[jj][k]<0){//P->D
-						for (int kl = 0; kl < 20; kl++) {
+			   		if(deltaWeight1[jj][k]<-0.01){	
+					for (int kl = 0; kl < 20; kl++) {
 					double kj = (double)(kl - 10) / 10;
 					if ((weightprev1 > kj || weightprev1==kj) && weightprev1 < kj + 0.1) {
-					  deltaweightDistIHPD[kl]+= (arrayIH->ConductanceToWeight(jj, k, param->maxWeight, param->minWeight)-weightprev1)/deltaWeight1[jj][k];
+					  deltaweightDistIHPD[kl]+= (weightnew1-weightprev1)/deltaWeight1[jj][k];
 					  deltaweightCountIHPD[kl] += 1;
 					}
 					if(kl==19){
 					if (weightprev1 == 1) {
-						deltaweightDistIHPD[19] += (arrayIH->ConductanceToWeight(jj, k, param->maxWeight, param->minWeight)-weightprev1)/deltaWeight1[jj][k];
+						deltaweightDistIHPD[19] += (weightnew1-weightprev1)/deltaWeight1[jj][k];
 						deltaweightCountIHPD[kl] += 1;
 					}
 					}
 				}
+					}
 					}
 		
 												}
