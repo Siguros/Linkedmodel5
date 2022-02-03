@@ -91,7 +91,7 @@ Param::Param() {
 	PulseNum =1; //default pulsenum=1;
 	WeightTestDist = false;
 	SignTestDist=false;
-	DeltaWeightDist = true;
+	DeltaWeightDist = false;
 
 }
 

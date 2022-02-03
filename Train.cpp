@@ -615,6 +615,9 @@ double s2[param->nOutput];  // Output delta from hidden layer to the output laye
 					if(param->DeltaWeightDist){
 					if(static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->weightprev<0 && deltaWeight1[jj][k]>0){//D->P
 					if(deltaWeight1[jj][k]>0.01){
+					if((weightnew1-weightprev1) != 0){
+
+
 					for (int kl = 0; kl < 20; kl++) {
 					double kj = (double)(kl - 10) / 10;
 					if ((weightprev1 > kj || weightprev1==kj) && weightprev1 < kj + 0.1) {
@@ -630,8 +633,10 @@ double s2[param->nOutput];  // Output delta from hidden layer to the output laye
 				}
 					}
 					}
+					}
 					else if(static_cast<AnalogNVM*>(arrayIH->cell[jj][k])->weightprev>0 && deltaWeight1[jj][k]<0){//P->D
 			   		if(deltaWeight1[jj][k]<-0.01){	
+					if((weightnew1-weightprev1) !=0){
 					for (int kl = 0; kl < 20; kl++) {
 					double kj = (double)(kl - 10) / 10;
 					if ((weightprev1 > kj || weightprev1==kj) && weightprev1 < kj + 0.1) {
@@ -645,6 +650,7 @@ double s2[param->nOutput];  // Output delta from hidden layer to the output laye
 					}
 					}
 				}
+					}
 					}
 					}
 		
